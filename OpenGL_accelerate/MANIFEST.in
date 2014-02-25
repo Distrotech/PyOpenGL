@@ -1,3 +1,0 @@
-include src/*.pyx
-include src/*.c
-include license.txt
