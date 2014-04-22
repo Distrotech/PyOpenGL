@@ -1,15 +1,13 @@
-"""Test simple functions (i.e. no pointers involved)"""
-import OpenGL 
+"""Test GLUT forward-compatible mode..."""
+import OpenGL
+OpenGL.FORWARD_COMPATIBLE_ONLY = True
+OpenGL.ERROR_CHECKING = True
 #OpenGL.USE_ACCELERATE = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from OpenGL.GL import GLdouble
-from OpenGL.arrays import arraydatatype
-handler = arraydatatype.ArrayDatatype.getHandler( GLdouble * 16 )
-handler.registerReturn( )
-
-import time,traceback
+from OpenGL.GL import shaders
+import time
 start = time.time()
 
 window = None
@@ -19,15 +17,18 @@ def display():
         glutSetWindow(window);
         glClearColor (0.0, 0.0, (time.time()%1.0)/1.0, 0.0)
         glClear (GL_COLOR_BUFFER_BIT)
-        glMatrixMode(GL_PROJECTION);
-        # For some reason the GL_PROJECTION_MATRIX is overflowing with a single push!
-        # glPushMatrix()
-        matrix = glGetDoublev( GL_PROJECTION_MATRIX)
-        print('matrix', type(matrix), matrix[:][:])
+        try:
+            glGetString( GL_EXTENSIONS )
+        except GLError as err:
+            pass 
+        else:
+            print('Egads, glGetString should not have worked!')
+        assert bool( glGenVertexArrays ), "Should have vertex array support in 3.2"
+        glFlush ()
         glutSwapBuffers()
     except Exception as err:
-        traceback.print_exc()
-        sys.exit(0)
+        glutDestroyWindow( window )
+        raise
 
 size = (250,250)
 
@@ -38,7 +39,7 @@ def reshape( *args ):
     display()
 
 def ontimer( *args ):
-    print('timer', args, '@time', time.time()-start)
+#    print 'timer', args, '@time', time.time()-start
     glutTimerFunc( 1000, ontimer, 24 )
 
 def idle():
@@ -80,8 +81,15 @@ def printFunction( name ):
 if __name__ == "__main__":
     import sys
     newArgv = glutInit(sys.argv)
-    print('newArguments', newArgv)
-    glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB )
+    glutInitContextVersion(3, 1)
+    glutInitContextFlags(GLUT_FORWARD_COMPATIBLE)
+    glutInitContextProfile(GLUT_CORE_PROFILE)
+    glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH )
+
+    glutSetOption(
+        GLUT_ACTION_ON_WINDOW_CLOSE,
+        GLUT_ACTION_GLUTMAINLOOP_RETURNS
+    );
     glutInitWindowSize(250, 250)
     glutInitWindowPosition(100, 100)
     window = glutCreateWindow("hello")
